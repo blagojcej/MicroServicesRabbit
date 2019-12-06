@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using MicroservicesRabbit.Domain.Core.Events;
 
 namespace MicroservicesRabbit.Domain.Core.Bus
 {
