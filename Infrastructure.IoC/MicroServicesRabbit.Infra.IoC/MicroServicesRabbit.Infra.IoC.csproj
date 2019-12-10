@@ -13,6 +13,8 @@
     <ProjectReference Include="..\..\Infrastructure.Bus\MicroservicesRabbit.Infra.Bus\MicroservicesRabbit.Infra.Bus.csproj" />
     <ProjectReference Include="..\..\Microservices\Banking\MicroServicesRabbit.Banking.App\MicroServicesRabbit.Banking.App.csproj" />
     <ProjectReference Include="..\..\Microservices\Banking\MicroServicesRabbit.Banking.Data\MicroServicesRabbit.Banking.Data.csproj" />
+    <ProjectReference Include="..\..\Microservices\Transfer\MicroServicesRabbit.Transfer.App\MicroServicesRabbit.Transfer.App.csproj" />
+    <ProjectReference Include="..\..\Microservices\Transfer\MicroServicesRabbit.Transfer.Data\MicroServicesRabbit.Transfer.Data.csproj" />
   </ItemGroup>
 
 </Project>

@@ -11,6 +11,7 @@ using MediatR;
 using MicroservicesRabbit.Domain.Core.Bus;
 using MicroservicesRabbit.Domain.Core.Commands;
 using MicroservicesRabbit.Domain.Core.Events;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -31,9 +32,15 @@ namespace MicroservicesRabbit.Infra.Bus
         /// </summary>
         private readonly List<Type> _evenTypes;
 
-        public RabbitMQBus(IMediator mediator)
+        /// <summary>
+        /// 
+        /// </summary>
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+
+        public RabbitMQBus(IMediator mediator, IServiceScopeFactory serviceScopeFactory)
         {
             _mediator = mediator;
+            _serviceScopeFactory = serviceScopeFactory;
             _handlers=new Dictionary<string, List<Type>>();
             _evenTypes=new List<Type>();
         }
@@ -139,12 +146,43 @@ namespace MicroservicesRabbit.Infra.Bus
             //Check if handler is registered for this event name
             if (_handlers.ContainsKey(eventName))
             {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    //Get all subscriptions for the event name
+                    var subscriptions = _handlers[eventName];
+
+                    foreach (var subscription in subscriptions)
+                    {
+                        // create instance of type
+                        //WARNING: REQUIRES EMPTY CONTRUCTOR OF EVENT HANDLERS
+                        //var handler = Activator.CreateInstance(subscription);
+                        var handler = scope.ServiceProvider.GetService(subscription);
+
+                        if (handler == null) continue;
+
+                        //Get event with same name
+                        var eventType = _evenTypes.SingleOrDefault(t => t.Name == eventName);
+
+                        //Deserialize the object into event
+                        var @event = JsonConvert.DeserializeObject(message, eventType);
+
+                        //Cast to concrete type
+                        var concreteType = typeof(IEventHandler<>).MakeGenericType(eventType);
+
+                        //Invoke the main method which is a "Handle" of IEventHandler
+                        await (Task)concreteType.GetMethod("Handle").Invoke(handler, new object[] { @event });
+                    }
+                }
+
+                /**
+                **WARNING: REQUIRES EMPTY CONTRUCTOR OF EVENT HANDLERS
                 //Get all subscriptions for the event name
                 var subscriptions = _handlers[eventName];
 
                 foreach (var subscription in subscriptions)
                 {
                     // create instance of type
+                    //WARNING: REQUIRES EMPTY CONTRUCTOR OF EVENT HANDLERS
                     var handler = Activator.CreateInstance(subscription);
 
                     if(handler==null) continue;
@@ -161,6 +199,7 @@ namespace MicroservicesRabbit.Infra.Bus
                     //Invoke the main method which is a "Handle" of IEventHandler
                     await (Task) concreteType.GetMethod("Handle").Invoke(handler, new object[] {@event});
                 }
+                */
             }
         }
     }
